@@ -1,0 +1,110 @@
+---
+title: "Homework 3 - Olivieri"
+output: html_notebook
+---
+```{r}
+library(ggplot2)
+library(arules)
+library(arulesViz)
+library(dplyr)
+```
+
+```{r}
+setwd("/Users/aoliv01/Desktop/GradSchool/2018-2/DataMining/Homework/HW3")
+getwd()
+```
+
+```{r}
+raw <- read.csv("bankdata_csv_all.csv")
+str(raw)
+```
+```{r}
+attach(raw)
+```
+
+```{r}
+total_na <- sum(is.na(raw))
+cat("Total na is: ", total_na)
+```
+
+```{r}
+income_box <- ggplot(raw, aes(x = pep, y = income)) + 
+  geom_boxplot(fill = "steelblue", color = "darkorange") +
+  theme(plot.title = element_text(hjust = 0.5, color = "darkorange"))
+
+income_box
+```
+
+```{r}
+age_box <- ggplot(raw, aes(x = pep, y = age)) + 
+  geom_boxplot(fill = "steelblue", color = "darkorange") +
+  theme(plot.title = element_text(hjust = 0.5, color = "darkorange"))
+age_box
+```
+
+```{r}
+ggplot(data = raw, aes(x = income, y = age)) + 
+  geom_point(colour = "steelblue", alpha = .5) + 
+  geom_smooth(method = "lm") +
+  facet_wrap(~ pep) + 
+  ggtitle("PEP by Age and Income")
+```
+
+```{r}
+aggregate(income ~ pep, data = raw, median)
+aggregate(age ~ pep, data = raw, median)
+```
+
+```{r}
+aggregate(income ~ pep, data = raw, max)
+aggregate(age ~ pep, data = raw, max)
+```
+
+```{r}
+aggregate(income ~ pep, data = raw, min)
+aggregate(age ~ pep, data = raw, min)
+```
+```{r}
+change <- c("id", "age", "income", "children")
+disc <- raw[ , !(names(raw) %in% change)]
+
+disc$age <- discretize(
+  raw$age,
+  method = "cluster",
+  labels = c("young", "middle", "older")
+  )
+disc$income <- discretize(
+    raw$income,
+    method = "cluster",
+    labels = c("low", "medium", "high")
+  )
+disc$children <- discretize(
+    raw$children,
+    method = "cluster",
+    labels = c("low", "medium", "many")
+  )
+  
+summary(disc)
+```
+
+
+```{r}
+rules <- apriori(disc, parameter = list(supp = 0.035, conf = 0.75, maxlen = 4))
+rules<-sort(rules, by="lift", decreasing=TRUE)
+options(digits=2)
+inspect(rules[1:5])
+```
+
+```{r}
+inspect(subset(rules, subset = rhs %pin% "pep=YES" & !lhs %pin% "children=medium"))
+```
+
+```{r}
+#plot(subset(rules, subset = rhs %pin% "pep=YES" & !lhs %pin% "children=medium"),shading=NA, label = lhs)
+ggplot(data = rules, aes(x = support, y = confidence)) + 
+  geom_point(colour = "steelblue", alpha = .5) + 
+  geom_smooth(method = "lm") +
+  ggtitle("PEP by Age and Income")
+```
+
+

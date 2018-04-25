@@ -1,0 +1,118 @@
+---
+title: "Grades of Students by School"
+output: html_notebook
+---
+
+
+```{r}
+grades <- read.csv('data.csv')
+```
+```{r}
+cols <- c("school", "section", "very_ahead", "middling", "behind", "more_behind", "very_behind", "completed")
+colnames(grades) <- cols
+```
+
+```{r}
+attach(grades)
+```
+
+```{r}
+summary(grades)
+```
+
+```{r}
+sections_by_school <- aggregate(section, by = list(school), FUN = max)
+sections_by_school
+```
+If the semester is nearly 3/4 of the way over then school C, D, and E must be on different schedules because they've only completed 1 section while A and B have completed at least 10 more.
+
+```{r}
+current_course <- max(grades[which(school == "B"), ]$section) / 3 * 4
+30 - current_course
+```
+
+If one of the schools which has the most sections completed, school B, only has 12 sections done. And the semester is already 3/4 of the way through. They will have to do 14 more sections (2 more than they've completed to date)  in 1/3 of the time -- 1/4 of the total time of the semester. 
+
+This seems odd. Either the final sections of this math course are increasingly easier than the previous 3/4, or they will have to rush the last 1/4 of the semester, or they may not finish. Unless the first 3/4 of the semester are filled with days off for holidays and the previous pace was comparatively slow. Which still would not explain why C, D, and E only have one to three sections done.
+
+(School B was chosen because 12 cleanly makes 3/4 of 16.)
+
+
+```{r}
+maxA <- max(grades[which(school == "A"), ]$section)
+maxB <- max(grades[which(school == "B"), ]$section)
+grades[which(school == "A" & section == maxA), "completed"]
+```
+
+Five kids have finished from school A. 
+
+```{r}
+grades[which(school == "B" & section == maxB), "completed"]
+```
+
+ 19 kids have finished from school B.
+ 
+ 
+```{r}
+max(very_ahead)
+```
+ 
+ No kids in any school are 'very ahead'. 
+ 
+```{r}
+# Some quick histograms
+getHist <- function(vectorX, bin, xlabel = "x", ylabel = "y") {
+  qplot(vectorX,
+        geom="histogram",
+        binwidth = bin,
+        fill=I("steelblue"),
+        col=I("darkorange"),
+        xlab = xlabel,
+        ylab = ylabel
+        )
+}
+```
+
+```{r}
+getHist(middling, 5, "middling", "frequency")
+getHist(very_behind, 1, "very behind", "frequency")
+getHist(more_behind, 1, "more behind", "frequency")
+```
+
+Not much can be derived from these, there aren't strong patterns here. One stand-out is that one section of one school reported over 20 kids (almost 25) were 'very behind.'
+ 
+
+```{r}
+ggplot(grades, aes(x = school, y = completed)) + geom_boxplot()
+```
+
+
+This is a strange result. If we remember from earlier, School E only has one section finished and they have over 20 kids who have completed the entire course. 
+
+
+```{r}
+ggplot(grades, aes(x = school, y = log(completed))) + geom_boxplot()
+```
+Changing the completed to log evens out the schools that have finished fewer sections, but shows school E is still an outlier.
+
+```{r}
+behind_plot <- ggplot(grades, aes(x = section, y = value, color = variable)) +
+  geom_point(aes(y = very_behind, col = "very behind")) +
+  geom_point(aes(y = more_behind, col = "more behind")) +
+  geom_point(aes(y = behind, col = "behind")) +
+  facet_grid(. ~ school)
+behind_plot
+```
+
+This shows a gradual downtrend among students who are behind each week as the sections progress.
+
+```{r}
+
+doing_well_plot <- ggplot(grades, aes(x = section, y = value, color = variable)) +
+  geom_point(aes(y = middling, col = "middling")) +
+  geom_point(aes(y = completed, col = "completed")) +
+  facet_grid(. ~ school)
+doing_well_plot
+```
+
+Here there is random noise, but a noticeable uptrend among middling students each section as school B.
