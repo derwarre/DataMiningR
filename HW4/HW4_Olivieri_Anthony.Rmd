@@ -1,0 +1,103 @@
+---
+title: "Homework 4 - Olivieri"
+output: html_notebook
+---
+
+
+```{r}
+#### Replace working directory as necessary
+setwd(getwd())
+getwd()
+```
+```{r}
+### Read in the file
+raw <- read.csv('fedPapers85.csv')
+```
+
+```{r}
+cat('Number of NA\'s: ', sum(is.na(raw)))
+```
+
+```{r}
+### Check the dataframe for variable type
+str(raw)
+```
+
+```{r}
+### Getting a look at the column names
+### The words are after column 1 and 2
+colnames(raw)
+```
+
+```{r}
+### Removing the filename and author column
+words <- raw[,-1:-2]
+```
+
+```{r}
+### Setting k means to 4 centroids
+### These centroids will represent the 3 authors and the mixed author of HM
+## Set the seed for reproducibility
+set.seed(1234)
+m_k <- kmeans(words, 5, iter.max = 5000)
+```
+
+```{r}
+### There's going to be a lot of noise in here
+### The word values aren't a nominal (binary) value 
+### Also the words are common words: 'at', 'are', 'shall'
+### The results are going to be mixed-up
+m_k$centers
+```
+
+```{r}
+### We can take the original data frame with the author attribute
+### and attach to a new data frame with the cluster
+word_cluster <- data.frame(raw, m_k$cluster)
+head(word_cluster)
+tail(word_cluster)
+```
+
+```{r}
+table(word_cluster$author, m_k$cluster)
+```
+
+```{r}
+library(cluster)
+```
+
+```{r}
+### Looking at a cluster plot shows Jay down on his own
+### The other clusters representing Hamilton, Madison, HM, and disputed
+### there's a lot of overlay
+## Let's say cluster 1 is Madison and cluster 4 is Hamilton
+## Cluster 3 is both of them, 'HM'
+## Which makes cluster 2, our disputed author
+## Cluster 2 seems to be wholly engulfed by Madison, sharing some values with 'HM', and Hamilton
+clusplot(raw, m_k$cluster, color = T, shade = T, labels = 5, plotchar = T)
+```
+
+```{r}
+### Create a cluster dendogram
+### using HAC
+d = dist(as.matrix(words))
+hc = hclust(d)
+plot(hc)
+```
+
+```{r}
+### Cut the HAC dendogram at 5 to match the k-means clusters
+### The tables show similar results
+### Jay by himself, with Hamilton and Madison mixed in
+cluster_cut <- cutree(hc, 5)
+table(cluster_cut, type = raw$author)
+table(cluster = m_k$cluster, type = raw$author)
+```
+
+```{r}
+### This plot is remarkably similar to the k-means cluster
+clusplot(raw, cluster_cut, color = T, shade = T, labels = 5, plotchar = T)
+```
+
+The cluster analysis reveals milky results. The commonality of the words and the similar writing styles
+of Hamilton and Madison made splitting the papers into distinct separate authors challenging. Only by small variances are Hamilton and Madison split away from each other. It's not with great confidence, but I'm calling the disputed Federalist Papers to have been written primarily by Madison -- it also wouldn't be surprising that Hamilton wrote some or at least collaborated / edited the works.

@@ -1,0 +1,87 @@
+---
+title: "Week 5 Homework"
+output: html_notebook
+---
+
+```{r}
+setwd(getwd())
+getwd()
+```
+
+```{r}
+#install.packages('rpart')
+#install.packages('rpart.plot')
+#install.packages('RColorBrewer')
+library(rpart)
+library(rpart.plot)
+library(RColorBrewer)
+
+```
+
+```{r}
+### Read in the csv
+raw <- read.csv("fedPapers85.csv")
+```
+
+```{r}
+### Remove the filenames column
+out <- c("filename")
+raw <- raw[, !names(raw) %in% out]
+```
+
+```{r}
+### Split into train and test
+### We can't split the original into train and test with the disputed 
+### values in both or our predictions will just predict that the auther
+### is disputed. 
+test <- raw[raw$author == 'dispt',]
+train <- raw[raw$author != 'dispt', ]
+```
+
+```{r}
+cat("NA's in test: ", sum(is.na(test)))
+cat("\nNA's in train: ", sum(is.na(train)))
+```
+
+```{r}
+fit <- rpart(author ~ ., data = train, method = "class")
+fit2 <- rpart(author ~ ., data = train, method = "class", control = rpart.control(cp = .05))
+fit3 <- rpart(author ~ ., data = train, method = "class", control = rpart.control(cp = .05, minbucket = 5))
+```
+
+```{r}
+#printcp(fit)
+#printcp(fit2)
+#printcp(fit3)
+```
+
+```{r}
+plotcp(fit)
+plotcp(fit2)
+plotcp(fit3)
+```
+
+```{r}
+rpart.plot(fit3)
+```
+
+```{r}
+fit3$variable.importance
+```
+
+```{r}
+prediction <- predict(fit3, test[,-1], type = "class")
+```
+
+```{r}
+test$prediction <- prediction
+```
+
+```{r}
+#fit
+#fit2
+fit3
+```
+
+
+
