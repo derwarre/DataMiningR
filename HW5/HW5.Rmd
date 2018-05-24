@@ -20,7 +20,7 @@ library(RColorBrewer)
 
 ```{r}
 ### Read in the csv
-raw <- read.csv("fedPapers85.csv")
+raw <- read.csv("../HW4/fedPapers85.csv")
 ```
 
 ```{r}
@@ -45,12 +45,12 @@ cat("\nNA's in train: ", sum(is.na(train)))
 
 ```{r}
 fit <- rpart(author ~ ., data = train, method = "class")
-fit2 <- rpart(author ~ ., data = train, method = "class", control = rpart.control(cp = .05))
-fit3 <- rpart(author ~ ., data = train, method = "class", control = rpart.control(cp = .05, minbucket = 5))
+#fit2 <- rpart(author ~ ., data = train, method = "class", control = rpart.control(cp = .05))
+#fit3 <- rpart(author ~ ., data = train, method = "class", control = rpart.control(cp = .05, minbucket = 5))
 ```
 
 ```{r}
-#printcp(fit)
+printcp(fit)
 #printcp(fit2)
 #printcp(fit3)
 ```
@@ -70,7 +70,7 @@ fit3$variable.importance
 ```
 
 ```{r}
-prediction <- predict(fit3, test[,-1], type = "class")
+prediction <- predict(fit, test[,-1], type = "class")
 ```
 
 ```{r}
@@ -78,9 +78,9 @@ test$prediction <- prediction
 ```
 
 ```{r}
-#fit
+prediction
 #fit2
-fit3
+#fit3
 ```
 
 

@@ -1,7 +1,7 @@
 library(knitr)
 
 
-setwd("/Users/aoliv01/Desktop/GradSchool/2018-2/DataMining/Classwork/Week4")
+setwd("/Users/aoliv01/Desktop/GradSchool/2018-2/Marketing/HW2")
 getwd()
 
-purl("Week4.RMD", output = "Week4.R", documentation = 2)
+purl("HW2.rmd", output = "HW2.R", documentation = 2)
