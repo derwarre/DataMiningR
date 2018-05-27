@@ -1,0 +1,129 @@
+#' ---
+#' title: "HW6 - Olivieri"
+#' output: html_notebook
+#' ---
+#' 
+#' 
+## ------------------------------------------------------------------------
+setwd("/Users/aoliv01/Desktop/GradSchool/2018-2/DataMining/Homework/HW6")
+getwd()
+
+#' 
+## ------------------------------------------------------------------------
+library(rpart)
+library(rpart.plot)
+library(RColorBrewer)
+library(e1071)
+
+#' 
+## ------------------------------------------------------------------------
+img_train <- read_csv("train.csv")
+img_test <- read_csv("test.csv")
+
+#' 
+## ------------------------------------------------------------------------
+cat("\nNA's train: ", sum(is.na(img_train)))
+cat("\nNA's test: ", sum(is.na(img_test)))
+
+cat("\nNegative values train: ", sum(img_train < 0))
+cat("\nNegative values test: ", sum(img_test < 0))
+cat("\nMax Values train / test: \n")
+max(img_train)
+max(img_test)
+
+#' 
+## ------------------------------------------------------------------------
+img_train$label <- as.factor(img_train$label)
+tree1 <- rpart(label ~ ., data = img_train, method = "class")
+
+#' 
+## ------------------------------------------------------------------------
+plotcp(tree1)
+
+#' 
+## ------------------------------------------------------------------------
+rpart.plot(tree1, box.palette=0)
+
+#' 
+## ------------------------------------------------------------------------
+ptree <- prune(tree1, cp = tree1$cptable[which.min(tree1$cptable[,"xerror"]),"CP"])
+rpart.plot(ptree, box.palette=0)
+
+#' 
+## ------------------------------------------------------------------------
+tree_pred <- predict(ptree, newdata = img_test, type = "class")
+tree_df <- data.frame(ImageId = seq.int(length(tree_pred)), Label = tree_pred)
+
+#' 
+## ------------------------------------------------------------------------
+head(tree_df)
+tail(tree_df)
+cat("\nNA's: ", sum(is.na(tree_df)))
+
+#' 
+## ------------------------------------------------------------------------
+write.csv(tree_df, file='submission_ptree.csv', row.names=FALSE,  quote=FALSE)
+
+#' 
+## ------------------------------------------------------------------------
+nb<- naiveBayes(label~., data = img_train)
+
+#' 
+#' 
+## ------------------------------------------------------------------------
+nb_pred <- predict(nb, newdata = img_train, type = "class")
+nb_df <- data.frame(ImageId = seq.int(length(nb_pred)), Label = nb_pred)
+head(nb_df)
+tail(nb_df)
+cat("\nNA's: ", sum(is.na(nb_df)))
+
+#' 
+## ------------------------------------------------------------------------
+cat("\n\n:::::::Naive Bayes results:::::::\n")
+confusionMatrix(data = nb_pred, reference = img_train$label)$overall['Accuracy']
+confusionMatrix(data = nb_pred, reference = img_train$label)$table
+
+#' 
+#' 
+## ------------------------------------------------------------------------
+cat("\n\n:::::::Pruned Decision Tree results:::::::\n")
+confusionMatrix(data = ptree_train_pred, reference = img_train$label)$overall['Accuracy']
+confusionMatrix(data = ptree_train_pred, reference = img_train$label)$table
+
+## ------------------------------------------------------------------------
+label <- img_train$label
+all_img <- img_train[,-1]
+all_img <- rbind(all_img, img_test)
+all_img <- all_img %>% mutate_if(is.numeric, as.factor)
+
+#' 
+## ------------------------------------------------------------------------
+new_train <- all_img[1:42000,]
+new_test <- all_img[42001:70000,]
+new_train$label <- label
+
+#' 
+## ------------------------------------------------------------------------
+nb2 <- naiveBayes(label ~., data = new_train, laplace = 1)
+nb_train_pred <- predict(nb2, newdata = new_train, type = "class")
+cat("\n\n:::::::Discretized Naive Bayes results:::::::\n")
+confusionMatrix(data = nb_train_pred, reference = img_train$label)$overall['Accuracy']
+confusionMatrix(data = nb_train_pred, reference = img_train$label)$table
+
+#' 
+## ------------------------------------------------------------------------
+nb_test_pred <- predict(nb2, newdata = new_test, type = "class")
+
+#' 
+## ------------------------------------------------------------------------
+nb_df <- data.frame(ImageId = seq.int(length(nb_test_pred)), Label = nb_test_pred)
+head(nb_df)
+tail(nb_df)
+cat("\nNA's: ", sum(is.na(nb_df)))
+
+#' 
+## ------------------------------------------------------------------------
+write.csv(nb_df, file='submission_nb.csv', row.names=FALSE,  quote=FALSE)
+
+#' 
+
