@@ -1,0 +1,142 @@
+---
+title: "HW8"
+author: "Ollie"
+date: "6/6/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("/Users/aoliv01/Desktop/GradSchool/2018-2/DataMining/Homework/HW8")
+```
+
+```{r include=FALSE}
+library(ggplot2) 
+library(caret)   
+library(readr)
+library(farff)
+library(plyr) ## load this BEFORE dplyr
+library(dplyr)
+library(lattice)
+library(e1071)
+library(rpart)
+library(rpart.plot)
+library(RColorBrewer)
+library(psych)
+library(tm)
+library(wordcloud)
+```
+
+```{r}
+raw = readARFF("deception_data_converted_arff.arff")
+```
+
+```{r}
+cat("NA's in raw: ", sum(is.na(raw)))
+```
+
+```{r}
+clean = raw[complete.cases(raw),]
+
+str(clean)
+```
+
+```{r}
+corp = VCorpus(VectorSource(clean$review))
+```
+
+```{r}
+review_prepped = DocumentTermMatrix(corp, control = list(
+  tolower = TRUE,
+  removeNumbers = TRUE,
+  stopwords = TRUE,
+  removePunctuation = TRUE,
+  stemming = TRUE))
+```
+
+```{r}
+freq_rev <- review_prepped %>%
+  findFreqTerms(5) %>%
+  review_prepped[ , .]
+```
+
+```{r}
+hot_encode = function(x) {
+  x <- ifelse(x > 0, "Yes", "No")
+}
+rev_all_prep_clean = freq_rev %>%
+  apply(MARGIN = 2, hot_encode)
+```
+
+```{r}
+clean_prepped = cbind(clean, rev_all_prep_clean)
+clean_prepped = lapply(clean_prepped, unname)
+clean_prepped = data.frame(clean_prepped)
+```
+
+```{r}
+search_grid = expand.grid(usekernel = c(TRUE, FALSE), fL = 0:5, adjust = seq(0, 5, by = 1))
+train_control = trainControl(method = "cv", number = 10)
+```
+
+
+```{r results="hidden", warning=1}
+search_grid = expand.grid(usekernel = c(TRUE, FALSE), fL = 0:5, adjust = seq(0, 5, by = 1))
+train_control = trainControl(method = "cv", number = 10)
+label = "lie"
+predictors = names(clean_prepped[-1])
+model_nb = train(clean_prepped[, predictors], clean_prepped[,label], method = "nb", trControl = train_control, tuneGrid = search_grid)
+```
+
+```{r}
+plot(model_nb)
+print(model_nb)
+```
+
+```{r include=FALSE}
+nb_pred = predict(model_nb, clean_prepped[,-1])
+```
+
+```{r}
+confusionMatrix(nb_pred, clean_prepped$lie)
+```
+
+```{r}
+rev_hot_encode = function(x) {
+  x <- ifelse(x > 0, 1 , 0)
+}
+rev_all_prep_clean = freq_rev %>%
+  apply(MARGIN = 2, rev_hot_encode)
+clean_prepped = cbind(clean, rev_all_prep_clean)
+clean_prepped = lapply(clean_prepped, unname)
+clean_prepped = data.frame(clean_prepped)
+```
+
+```{r}
+cat("NA's introduced: ", sum(is.na(clean_prepped)))
+```
+
+```{r}
+predictors = names(clean_prepped)[-1:-3]
+grid <- expand.grid(C = c(0.75, 0.9, 1, 1.1, 1.25))
+train_control = trainControl(method = "cv", number = 10, classProbs = T)
+svm_model = train(clean_prepped[,predictors], clean_prepped[,label], trControl = train_control, method = "svmLinear", tuneGrid = grid, scale = FALSE)
+```
+
+```{r}
+print(svm_model)
+plot(svm_model)
+```
+
+```{r}
+svm_pred = predict(svm_model, clean_prepped[,predictors])
+```
+
+
+
+```{r}
+confusionMatrix(svm_pred, clean_prepped$lie)
+```

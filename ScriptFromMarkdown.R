@@ -1,7 +1,7 @@
 library(knitr)
 
 
-setwd("/Users/aoliv01/Desktop/GradSchool/2018-2/DataMining/Homework/HW7/")
+setwd("/Users/aoliv01/Desktop/GradSchool/2018-2/DataMining/Homework/HW8")
 getwd()
 
-purl("HW7_Olivieri.rmd", output = "HW7_Olivieri.R", documentation = 2)
+purl("HW8.rmd", output = "HW8.R", documentation = 2)
